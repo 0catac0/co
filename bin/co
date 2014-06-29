@@ -1,0 +1,150 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require "sqlite3"
+require "readline"
+
+#use default_path
+default_path = "#{ENV['HOME']}/.co/co.db"
+path = default_path
+
+#check for coniguration
+if File.exists? "#{ENV['HOME']}/.coconfig"
+	#read config file
+	config = Hash[*File.read("#{ENV['HOME']}/.coconfig").split(/[= \n]+/)]
+	if(config['db'])
+		#set path from config
+		path = config['db']
+	end	
+end
+
+#create default directory if necessary
+if path == default_path
+	Dir.mkdir "#{ENV['HOME']}/.co" unless Dir.exists? "#{ENV['HOME']}/.co"
+end
+
+db = SQLite3::Database.new path 
+db.execute "CREATE TABLE IF NOT EXISTS commands(id INTEGER PRIMARY KEY, cmd TEXT UNIQUE, description TEXT)"
+db.execute "CREATE TABLE IF NOT EXISTS tags(id INTEGER PRIMARY KEY, tag TEXT UNIQUE)"
+db.execute "CREATE TABLE IF NOT EXISTS command_tags(cmd_id INTEGER, tag_id INTEGER, UNIQUE (cmd_id,tag_id) ON CONFLICT REPLACE)"
+
+pwd = `pwd`
+pwd.strip!
+
+options = {}
+optparse = OptionParser.new do |opts|
+	opts.on('-m STR','Provide a description for the command') do | desc |
+		options[:description] = desc
+	end
+end
+optparse.parse!
+
+#Save the last command in the command history to the database
+#NB. for this to work, EXPORT PROMPT_COMMAND="history -a;"
+if(ARGV[0] == 'save')
+
+	cmd = `tail -n 1 ${HOME}/.bash_history`
+	cmd.strip!
+
+	description = options[:description] 
+	
+	#treat any tokens that start with @ as tags
+	tags = []
+	tags << "@#{pwd}"
+	ARGV.each do | token |
+		if(token.start_with? "@")
+			tags << token
+		end
+	end
+	
+	#insert stuff into the database
+	begin
+		#find or insert command
+		db.execute "INSERT OR IGNORE INTO commands(cmd,description) VALUES ('#{cmd}','#{description}');"
+		cmd_id = db.get_first_value "SELECT id from commands WHERE cmd = '#{cmd}';"
+		
+		tags.each do |tag|
+			#find or insert tag
+			db.execute "INSERT OR IGNORE INTO tags(tag) VALUES ('#{tag}')"
+			tag_id = db.get_first_value "SELECT id from tags WHERE tag = '#{tag}';"
+			
+			#insert connection
+			db.execute "INSERT INTO command_tags(cmd_id,tag_id) VALUES (#{cmd_id},#{tag_id})"
+
+		end
+	rescue SQLite3::Exception => e
+		puts e
+	end
+	db.close if db
+	exit #quit
+end
+
+#select all commands in current pwd
+if(ARGV[0] == 'list')
+	tag = "@#{pwd}"
+	if(ARGV[1] != nil && ARGV[1].start_with?("@"))
+		tag = ARGV[1]	
+	end
+	tag_id = db.get_first_value "SELECT id from tags WHERE tag = '#{tag}'"
+	if(tag_id)
+		rows = db.execute "SELECT * from commands WHERE id in (SELECT cmd_id from command_tags where tag_id = '#{tag_id}')"
+		for row in rows do 
+			puts row.join "\s | \s"
+		end
+	end
+end
+
+#delete the command
+if(ARGV[0] == 'delete' && Integer(ARGV[1]) rescue false )
+	cmd_id = ARGV[1].to_i
+	db.execute "DELETE FROM commands WHERE id = #{cmd_id}"
+	db.execute "DELETE FROM command_tags where cmd_id = #{cmd_id}"
+	db.close
+	exit
+end
+
+if(ARGV[0] == 'tags')
+	rows = db.execute "SELECT tag from tags"
+	for row in rows do
+		puts row
+	end
+end
+
+#execute the provided id
+if(Integer(ARGV[0]) rescue false)
+	cmd_id = ARGV[0].to_i
+	cmd = db.get_first_value "SELECT cmd from commands where id = #{cmd_id};"
+	if(cmd)
+		exec cmd
+	end
+end
+
+#Default behaviour
+#Cycle through commands saved for pwd
+if(ARGV.length == 0 || (ARGV[0] != nil && ARGV[0].start_with?("@")))
+	
+	tag = "@#{pwd}"
+	if(ARGV[0] != nil && ARGV[0].start_with?("@"))
+		tag = ARGV[0]	
+	end
+	tag_id = db.get_first_value "SELECT id from tags WHERE tag = '#{tag}'"
+	
+	if(tag_id)
+		rows = db.execute "SELECT * from commands WHERE id in (SELECT cmd_id from command_tags where tag_id = '#{tag_id}')"
+		LIST = []
+		rows.each do | row |
+			Readline::HISTORY << row[1]
+			#LIST << row[1]
+		end
+	
+		#comp = proc {|s| LIST.grep(/^#{Regexp.escape(s)}/)}
+		#Readline.completion_proc = comp
+
+		while line = Readline.readline('co> ', true)
+			if(line != "")
+				system line
+			end
+			break
+		end	
+	end
+end
