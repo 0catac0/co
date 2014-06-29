@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Co::VERSION
   spec.authors       = ["0catac0"]
   spec.email         = ["taco@yavin4.nl"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.summary       = %q{Command organizer}
+  spec.description   = %q{Use co to remember and organize shell commands.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
