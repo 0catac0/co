@@ -94,8 +94,8 @@ Without it, co will save the last command of your previous session every time.
 
 By default the database is created as ~/.co/co.db.
 
-Co looks for a .coconfig file.
-You may specify a custom location for a database as a key value pair, with 'db' as the key;
+Co looks for a .coconfig file in your home directory.
+In this config file, you may specify a custom location for a database as a key value pair, with 'db' as the key;
 
   db=/home/0catac0/dropbox/co.db
 
