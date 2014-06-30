@@ -88,7 +88,7 @@ Without it, co will save the last command of your previous session every time.
 
 - co delete id
 
-	delete command id identified by id
+	delete command identified by id
 	
 ## Configuration
 
