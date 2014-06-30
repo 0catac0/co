@@ -60,28 +60,34 @@ Without it, co will save the last command of your previous session every time.
 ## Usage
 
 - co save [@tag] [@tag] [-m message]
+
 	Save last command from history to the database.
 	Co automatically tags the saved command with @[pwd].
 	Tags should start with the @ character to be recognized as such.
 	The -m message should be provided within quotes "".
 
 - co
+
 	Cycles through commands tagged with [@pwd]. 
 	If there are no commands found in the database, the command falls through.
 
 - co @tag
+
 	Cycles through commands tagged with @tag
 	If there are no commands found in the database, the command falls through.
 
 - co list [all] [@tag]
+
 	without optional arguments: lists commands for @[pwd]
 	all: lists all commands in the database
 	@tag: lists commands for @tag
 
 - co id
+
 	execute command identified by id (integer)
 
 - co delete id
+
 	delete command id identified by id
 	
 ## Configuration
