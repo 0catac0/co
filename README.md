@@ -52,7 +52,7 @@ IMPORTANT:
 
 You need to include the following export into your bash profile.
 
-    `export PROMPT_COMMAND="history -a;"$PROMPT_COMMAND`
+    export PROMPT_COMMAND="history -a;"$PROMPT_COMMAND
 
 After this bash will sync your history file on every command. 
 Without it, co will save the last command of your previous session every time.
