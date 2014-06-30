@@ -27,7 +27,7 @@ And use the arrow keys to cycle the commands that are tagged with the directory 
 Besides the automatic pwd tags, you may also define your own tags. And specify a message that helps you remember the exact use for the command. 
 For the nmap example you could use:
 
-    $ co @scan @nmap -m "perform firewall scan with random mac"
+    $ co save @scan @nmap -m "perform firewall scan with random mac"
 
 At a later stage, when you need to do a scan, you can;
 
