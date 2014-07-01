@@ -45,8 +45,10 @@ if(ARGV[0] == 'save')
 
 	cmd = `tail -n 1 ${HOME}/.bash_history`
 	cmd.strip!
+	cmd.gsub!("\'","\'\'")
 
 	description = options[:description] 
+	description.gsub!("\'","\'\'") unless description == nil
 	
 	#treat any tokens that start with @ as tags
 	tags = []
@@ -60,7 +62,8 @@ if(ARGV[0] == 'save')
 	#insert stuff into the database
 	begin
 		#find or insert command
-		db.execute "INSERT OR IGNORE INTO commands(cmd,description) VALUES ('#{cmd}','#{description}');"
+		db.execute("INSERT OR IGNORE INTO commands(cmd,description) VALUES ('#{cmd}','#{description}');")
+
 		cmd_id = db.get_first_value "SELECT id from commands WHERE cmd = '#{cmd}';"
 		
 		tags.each do |tag|
@@ -79,8 +82,16 @@ if(ARGV[0] == 'save')
 	exit #quit
 end
 
+#select all commands
+if(ARGV[0] == 'list' && ARGV[1] == 'all')
+	rows = db.execute "SELECT * from commands"
+	for row in rows do 
+		puts row.join "\s | \s"
+	end
+end
+
 #select all commands in current pwd
-if(ARGV[0] == 'list')
+if(ARGV[0] == 'list' && ARGV[1] != 'all') 
 	tag = "@#{pwd}"
 	if(ARGV[1] != nil && ARGV[1].start_with?("@"))
 		tag = ARGV[1]	
